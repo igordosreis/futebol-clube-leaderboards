@@ -13,7 +13,7 @@ const createTokenUtil = (user: Partial<IUser>): string => {
   return token;
 };
 
-const validateTokenUtil = (token: string): Partial<IUser> => {
+const validateTokenUtil = (token: string | undefined): Partial<IUser> => {
   const isTokenMissing = !token;
   if (isTokenMissing) throw new HttpException(404, 'Token missing');
 
