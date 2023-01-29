@@ -22,7 +22,7 @@ const validateTokenUtil = (token: string | undefined): Partial<IUser> => {
 
     return user as Partial<IUser>;
   } catch (error) {
-    throw new HttpException(401, 'Invalid token');
+    throw new HttpException(401, 'Token must be a valid token');
   }
 };
 

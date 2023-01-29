@@ -18,18 +18,11 @@ export default class UserController {
     return res.status(200).json(allMatches);
   }
 
-  // public static async findMatchesInProgress(req: Request, res: Response) {
-  //   const isInProgress = 'inProgress' in req.params;
+  public static async saveMatchInProgress(req: Request, res: Response) {
+    const { body: matchInProgress } = req;
 
-  //   if (isInProgress) {
-  //     const { inProgress } = req.params;
+    const newMatch = await MatchService.saveMatchInProgress(matchInProgress);
 
-  //     const progressStringToBool = inProgress === 'true';
-  //     const matchesInProgress = await MatchService.findMatchesInProgress(progressStringToBool);
-
-  //     return res.status(200).json(matchesInProgress);
-  //   }
-
-  //   UserController.findAllMatches(req, res);
-  // }
+    return res.status(201).json(newMatch);
+  }
 }
