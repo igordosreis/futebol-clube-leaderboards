@@ -33,4 +33,13 @@ export default class UserController {
 
     res.status(200).json({ message: 'Finished' });
   }
+
+  public static async updateMatchGoals(req: Request, res: Response) {
+    const { id } = req.params;
+    const { body: newMatchGoals } = req;
+
+    await MatchService.updateMatchGoals(Number(id), newMatchGoals);
+
+    res.status(200).json({ message: 'Goals updated' });
+  }
 }

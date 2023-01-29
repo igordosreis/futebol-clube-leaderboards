@@ -1,4 +1,4 @@
-import IMatch from '../interfaces/IMatch';
+import IMatch, { IMatchGoals } from '../interfaces/IMatch';
 import MatchModel from '../database/models/MatchModel';
 import TeamModel from '../database/models/TeamModel';
 import HttpException from '../utils/httpException.util';
@@ -57,5 +57,13 @@ export default class MatchService {
     const newMatch = await MatchModel.create({ ...matchData, inProgress: true });
 
     return newMatch;
+  }
+
+  public static async updateMatchGoals(id: number, newMatchGoals: IMatchGoals): Promise<void> {
+    // const { homeTeamGoals, awayTeamGoals } = newMatchGoals;
+    await MatchModel.update(
+      { ...newMatchGoals },
+      { where: { id } },
+    );
   }
 }
