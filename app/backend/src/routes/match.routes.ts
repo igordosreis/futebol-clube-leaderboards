@@ -15,9 +15,9 @@ matchRouter.post(
   MatchController.saveMatchInProgress,
 );
 
-// matchRouter.get(
-//   '/:id',
-//   MatchController.findMatchById,
-// );
+matchRouter.patch(
+  '/:id/finish',
+  MatchController.updateMatchToFinished,
+);
 
 export default matchRouter;

@@ -25,4 +25,12 @@ export default class UserController {
 
     return res.status(201).json(newMatch);
   }
+
+  public static async updateMatchToFinished(req: Request, res: Response) {
+    const { id } = req.params;
+
+    await MatchService.updateMatchToFinished(Number(id));
+
+    res.status(200).json({ message: 'Finished' });
+  }
 }
