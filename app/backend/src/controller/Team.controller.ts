@@ -7,4 +7,12 @@ export default class UserController {
 
     res.status(200).json(allTeams);
   }
+
+  public static async findTeamById(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const team = await TeamService.findTeamById(Number(id));
+
+    res.status(200).json(team);
+  }
 }
