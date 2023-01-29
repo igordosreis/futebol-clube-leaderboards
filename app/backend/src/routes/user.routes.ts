@@ -5,12 +5,9 @@ import validateTokenMiddleware from '../middlewares/validateToken.middleware';
 
 const userRouter = Router();
 
-// const userController = new UserController();
-
 userRouter.post(
   '/',
   validateLoginDataMiddleware,
-  // (req, res) => userController.login(req, res), // Caso o metodo em controller use arrow function, essa sintaxe tem que ser usada no router
   UserController.login,
 );
 

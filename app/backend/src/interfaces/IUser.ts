@@ -7,5 +7,4 @@ export default interface IUser extends IUserLogin {
   id: number;
   username: string;
   role: string;
-  token: string;
 }
