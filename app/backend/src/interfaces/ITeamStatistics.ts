@@ -1,5 +1,5 @@
 export interface ITeamBaseStatistics {
-  name: string | undefined;
+  name?: string;
   totalGames: number;
   totalVictories: number;
   totalDraws: number;
@@ -9,7 +9,6 @@ export interface ITeamBaseStatistics {
 }
 
 export default interface ITeamStatistics extends ITeamBaseStatistics {
-  name: string | undefined;
   totalPoints: number;
   goalsBalance: number;
   efficiency: number | string;

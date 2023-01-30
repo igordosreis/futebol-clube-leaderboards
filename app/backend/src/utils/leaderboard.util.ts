@@ -11,12 +11,24 @@ const baseStatistics: ITeamBaseStatistics = {
   goalsOwn: 0,
 };
 
-const verifyIfWin = (homeGoals: number, awayGoals: number) => (homeGoals > awayGoals ? 1 : 0);
-const verifyIfDraw = (homeGoals: number, awayGoals: number) => (homeGoals === awayGoals ? 1 : 0);
-const verifyIfLoss = (homeGoals: number, awayGoals: number) => (homeGoals < awayGoals ? 1 : 0);
-const totalPointsAmount = (victories: number, draws: number) => (victories * 3) + (draws);
+const verifyIfWin = (
+  homeGoals: number,
+  awayGoals: number,
+): number => (homeGoals > awayGoals ? 1 : 0);
 
-const currentTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean) => {
+const verifyIfDraw = (
+  homeGoals: number,
+  awayGoals: number,
+): number => (homeGoals === awayGoals ? 1 : 0);
+
+const verifyIfLoss = (
+  homeGoals: number,
+  awayGoals: number,
+): number => (homeGoals < awayGoals ? 1 : 0);
+
+const totalPointsAmount = (victories: number, draws: number): number => (victories * 3) + (draws);
+
+const currTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean): ITeamBaseStatistics => {
   const currentTeamStatistcs = currentTeamData
     .reduce((accStat: ITeamBaseStatistics, currMatch) => ({
       ...accStat,
@@ -37,7 +49,7 @@ const currentTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean) => 
   return currentTeamStatistcs;
 };
 
-const getTeamsBaseStats = (allMatches: IMatch[], home: boolean) => allMatches
+const getTeamsBaseStats = (allMatches: IMatch[], home: boolean): ITeamBaseStatistics[] => allMatches
   .reduce((accTeams: ITeamBaseStatistics[], currentTeam) => {
     const isCurrentTeamInAcc = accTeams.find(({ name }) => (home
       ? name === currentTeam.homeTeam?.teamName
@@ -48,19 +60,19 @@ const getTeamsBaseStats = (allMatches: IMatch[], home: boolean) => allMatches
       ? allMatches.filter(({ homeTeamId }) => homeTeamId === currentTeam.homeTeamId)
       : allMatches.filter(({ awayTeamId }) => awayTeamId === currentTeam.awayTeamId);
 
-    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, home);
+    const teamBaseStatistcs = currTeamBaseStatistics(currentTeamData, home);
 
     return [...accTeams, teamBaseStatistcs];
   }, [] as ITeamBaseStatistics[]);
 
-const sortTeams = (teams: ITeamStatistics[]) => teams
+const sortTeams = (teams: ITeamStatistics[]): ITeamStatistics[] => teams
   .sort((teamA, teamB) => teamB.totalPoints - teamA.totalPoints
   || teamB.totalVictories - teamA.totalVictories
   || teamB.goalsBalance - teamA.goalsBalance
   || teamB.goalsFavor - teamA.goalsFavor
   || teamA.goalsOwn - teamB.goalsOwn);
 
-const getPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]) => {
+const getPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]): ITeamStatistics[] => {
   const partialLeaderboard = teamsBaseStats
     .map((team: ITeamBaseStatistics) => {
       const totalPoints = totalPointsAmount(team.totalVictories, team.totalDraws);
@@ -75,7 +87,10 @@ const getPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]) => {
   return sortedPartialLeaderboard;
 };
 
-const mergeTeamStatistics = (awayStats: ITeamBaseStatistics, homeStats: ITeamBaseStatistics) => ({
+const mergeTeamStatistics = (
+  awayStats: ITeamBaseStatistics,
+  homeStats: ITeamBaseStatistics,
+): ITeamBaseStatistics => ({
   name: awayStats.name,
   totalGames: awayStats.totalGames + homeStats.totalGames,
   goalsFavor: awayStats.goalsFavor + homeStats.goalsFavor,
@@ -88,7 +103,7 @@ const mergeTeamStatistics = (awayStats: ITeamBaseStatistics, homeStats: ITeamBas
 const getFullLeaderboard = (
   baseStatsAway: ITeamBaseStatistics[],
   baseStatsHome: ITeamBaseStatistics[],
-) => {
+): ITeamStatistics[] => {
   const teamsBaseStats = baseStatsAway.map((teamAway: ITeamBaseStatistics) => {
     const teamStatsHome = baseStatsHome.find(({ name }) => name === teamAway.name);
     const teamStats = mergeTeamStatistics(teamAway, teamStatsHome as ITeamStatistics);
@@ -101,21 +116,21 @@ const getFullLeaderboard = (
   return sortedFullLeaderboard;
 };
 
-const getHomeLeaderboard = (allMatches: IMatch[]) => {
+const getHomeLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
   const homeTeamsBaseStats = getTeamsBaseStats(allMatches, true);
   const homeTeamsLeaderbaord = getPartialLeaderboard(homeTeamsBaseStats);
 
   return homeTeamsLeaderbaord;
 };
 
-const getAwayLeaderboard = (allMatches: IMatch[]) => {
+const getAwayLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
   const awayTeamsBaseStats = getTeamsBaseStats(allMatches, false);
   const awayTeamsLeaderboard = getPartialLeaderboard(awayTeamsBaseStats);
 
   return awayTeamsLeaderboard;
 };
 
-const getLeaderboard = (allMatches: IMatch[]) => {
+const getLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
   const teamsBaseStatsAsHome = getTeamsBaseStats(allMatches, true);
   const teamsBaseStatsAsAway = getTeamsBaseStats(allMatches, false);
   const teamsFullLeaderboard = getFullLeaderboard(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
