@@ -31,7 +31,7 @@ const totalPointsAmount = (
   draws: number,
 ): number => (victories * 3) + (draws);
 
-const currentTeamBaseStatistics = (
+const getCurrentTeamBaseStats = (
   currentTeamData: IMatch[],
   isHome: boolean,
 ): ITeamBaseStatistics => currentTeamData
@@ -65,7 +65,7 @@ const getTeamsBaseStats = (
     const currentTeamData = isHome
       ? allMatches.filter(({ homeTeamId }) => homeTeamId === currentTeam.homeTeamId)
       : allMatches.filter(({ awayTeamId }) => awayTeamId === currentTeam.awayTeamId);
-    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, isHome);
+    const teamBaseStatistcs = getCurrentTeamBaseStats(currentTeamData, isHome);
 
     return [...accTeams, teamBaseStatistcs];
   }, []);
@@ -79,14 +79,13 @@ const sortTeams = (teams: ITeamStatistics[]): ITeamStatistics[] => teams
 
 const createPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]): ITeamStatistics[] => {
   const partialLeaderboard = teamsBaseStats
-    .map((team: ITeamBaseStatistics) => {
-      const totalPoints = totalPointsAmount(team.totalVictories, team.totalDraws);
-      const efficiency = ((totalPoints / (team.totalGames * 3)) * 100).toFixed(2);
-      const goalsBalance = team.goalsFavor - team.goalsOwn;
+    .map((teamBaseStats: ITeamBaseStatistics) => {
+      const totalPoints = totalPointsAmount(teamBaseStats.totalVictories, teamBaseStats.totalDraws);
+      const efficiency = ((totalPoints / (teamBaseStats.totalGames * 3)) * 100).toFixed(2);
+      const goalsBalance = teamBaseStats.goalsFavor - teamBaseStats.goalsOwn;
 
-      return { ...team, totalPoints, efficiency, goalsBalance };
+      return { ...teamBaseStats, totalPoints, efficiency, goalsBalance };
     });
-
   const sortedPartialLeaderboard = sortTeams(partialLeaderboard);
 
   return sortedPartialLeaderboard;
@@ -111,10 +110,10 @@ const createFullLeaderboard = (
 ): ITeamStatistics[] => {
   const teamsBaseStats = teamsBaseStatsAway.map((teamBaseStatsAway: ITeamBaseStatistics) => {
     const teamBaseStatsHome = teamsBaseStatsHome
-      .find(({ name }) => name === teamBaseStatsAway.name);
+      .find(({ name }) => name === teamBaseStatsAway.name) as ITeamBaseStatistics;
     const teamBaseStats = mergeTeamStatistics(
       teamBaseStatsAway,
-      teamBaseStatsHome as ITeamStatistics,
+      teamBaseStatsHome,
     );
 
     return teamBaseStats;
@@ -140,8 +139,8 @@ const getLeaderboardAway = (allMatches: IMatch[]): ITeamStatistics[] => {
 };
 
 const getLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
-  const teamsBaseStatsAsHome = getTeamsBaseStats(allMatches, true);
   const teamsBaseStatsAsAway = getTeamsBaseStats(allMatches, false);
+  const teamsBaseStatsAsHome = getTeamsBaseStats(allMatches, true);
   const allTeamsLeaderboard = createFullLeaderboard(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
 
   return allTeamsLeaderboard;
