@@ -26,7 +26,10 @@ const verifyIfLoss = (
   awayGoals: number,
 ): number => (homeGoals < awayGoals ? 1 : 0);
 
-const totalPointsAmount = (victories: number, draws: number): number => (victories * 3) + (draws);
+const totalPointsAmount = (
+  victories: number,
+  draws: number,
+): number => (victories * 3) + (draws);
 
 const currTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean): ITeamBaseStatistics => {
   const currentTeamStatistcs = currentTeamData
@@ -49,7 +52,10 @@ const currTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean): ITeam
   return currentTeamStatistcs;
 };
 
-const getTeamsBaseStats = (allMatches: IMatch[], home: boolean): ITeamBaseStatistics[] => allMatches
+const getTeamsBaseStats = (
+  allMatches: IMatch[],
+  home: boolean,
+): ITeamBaseStatistics[] => allMatches
   .reduce((accTeams: ITeamBaseStatistics[], currentTeam) => {
     const isCurrentTeamInAcc = accTeams.find(({ name }) => (home
       ? name === currentTeam.homeTeam?.teamName
