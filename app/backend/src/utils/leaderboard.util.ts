@@ -41,21 +41,24 @@ const currentTeamFullStatistics = (teamBaseStatistics: any) => {
   return { ...teamBaseStatistics, totalPoints, efficiency, goalsBalance };
 };
 
-const currentTeamBaseStatistics = (currentTeamData: IMatch[]) => {
+const currentTeamBaseStatistics = (currentTeamData: IMatch[], home: boolean) => {
   const currentTeamStatistcs = currentTeamData.reduce((accStat: any, currentMatch) => ({
     ...accStat,
-    name: currentMatch.homeTeam?.teamName,
+    name: home ? currentMatch.homeTeam?.teamName : currentMatch.awayTeam?.teamName,
     totalGames: currentTeamData.length,
-    goalsFavor: accStat.goalsFavor + currentMatch.homeTeamGoals,
-    goalsOwn: accStat.goalsOwn + currentMatch.awayTeamGoals,
-    totalVictories: accStat
-      .totalVictories + verifyIfWin(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals),
-    totalDraws: accStat
-      .totalDraws + verifyIfDraw(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals),
-    totalLosses: accStat
-      .totalLosses + verifyIfLoss(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals),
+    goalsFavor: accStat.goalsFavor + (home
+      ? currentMatch.homeTeamGoals : currentMatch.awayTeamGoals),
+    goalsOwn: accStat.goalsOwn + (home ? currentMatch.awayTeamGoals : currentMatch.homeTeamGoals),
+    totalVictories: accStat.totalVictories + (home
+      ? verifyIfWin(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals)
+      : verifyIfWin(currentMatch.awayTeamGoals, currentMatch.homeTeamGoals)),
+    totalDraws: accStat.totalDraws + (home
+      ? verifyIfDraw(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals)
+      : verifyIfDraw(currentMatch.awayTeamGoals, currentMatch.homeTeamGoals)),
+    totalLosses: accStat.totalLosses + (home
+      ? verifyIfLoss(currentMatch.homeTeamGoals, currentMatch.awayTeamGoals)
+      : verifyIfLoss(currentMatch.awayTeamGoals, currentMatch.homeTeamGoals)),
   }), { ...baseStatistics });
-
   return currentTeamStatistcs;
 };
 
@@ -78,7 +81,7 @@ const getHomeTeamsStats = (allMatches: IMatch[]) => {
       const currentTeamData = allMatches
         .filter(({ homeTeamId }) => homeTeamId === currentTeam.homeTeamId);
 
-      const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData);
+      const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, true);
       const teamFullStatistics = currentTeamFullStatistics(teamBaseStatistcs);
 
       return [...accTeams, teamFullStatistics];
@@ -89,4 +92,27 @@ const getHomeTeamsStats = (allMatches: IMatch[]) => {
   return sortedHomeTeamsStats;
 };
 
-export { getHomeTeamsStats, totalPointsAmount };
+const getAwayTeamsStats = (allMatches: IMatch[]) => {
+  const awayTeamsStats = allMatches
+    .reduce((accTeams: any[], currentTeam) => {
+      const isCurrentTeamInAcc = accTeams
+        .find(({ name }) => name === currentTeam.awayTeam?.teamName);
+      if (isCurrentTeamInAcc) {
+        return accTeams;
+      }
+
+      const currentTeamData = allMatches
+        .filter(({ awayTeamId }) => awayTeamId === currentTeam.awayTeamId);
+
+      const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, false);
+      const teamFullStatistics = currentTeamFullStatistics(teamBaseStatistcs);
+
+      return [...accTeams, teamFullStatistics];
+    }, [] as ITeamStatistics[]);
+
+  const sortedAwayTeamsStats = sortTeams(awayTeamsStats);
+
+  return sortedAwayTeamsStats;
+};
+
+export { getHomeTeamsStats, getAwayTeamsStats };
