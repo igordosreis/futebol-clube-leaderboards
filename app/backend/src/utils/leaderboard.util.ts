@@ -33,43 +33,42 @@ const totalPointsAmount = (
 
 const currentTeamBaseStatistics = (
   currentTeamData: IMatch[],
-  home: boolean,
+  isHome: boolean,
 ): ITeamBaseStatistics => currentTeamData
-  .reduce((accStat: ITeamBaseStatistics, currMatch) => ({
+  .reduce((accStat: ITeamBaseStatistics, currMatch: IMatch) => ({
     ...accStat,
-    name: home ? currMatch.homeTeam?.teamName : currMatch.awayTeam?.teamName,
+    name: isHome ? currMatch.homeTeam?.teamName : currMatch.awayTeam?.teamName,
     totalGames: currentTeamData.length,
-    goalsFavor: accStat.goalsFavor + (home ? currMatch.homeTeamGoals : currMatch.awayTeamGoals),
-    goalsOwn: accStat.goalsOwn + (home ? currMatch.awayTeamGoals : currMatch.homeTeamGoals),
-    totalVictories: accStat.totalVictories + (home
+    goalsFavor: accStat.goalsFavor + (isHome ? currMatch.homeTeamGoals : currMatch.awayTeamGoals),
+    goalsOwn: accStat.goalsOwn + (isHome ? currMatch.awayTeamGoals : currMatch.homeTeamGoals),
+    totalVictories: accStat.totalVictories + (isHome
       ? verifyIfWin(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
       : verifyIfWin(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
-    totalDraws: accStat.totalDraws + (home
+    totalDraws: accStat.totalDraws + (isHome
       ? verifyIfDraw(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
       : verifyIfDraw(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
-    totalLosses: accStat.totalLosses + (home
+    totalLosses: accStat.totalLosses + (isHome
       ? verifyIfLoss(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
       : verifyIfLoss(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
   }), { ...baseStatistics });
 
 const getTeamsBaseStats = (
   allMatches: IMatch[],
-  home: boolean,
+  isHome: boolean,
 ): ITeamBaseStatistics[] => allMatches
-  .reduce((accTeams: ITeamBaseStatistics[], currentTeam) => {
-    const isCurrentTeamInAcc = accTeams.find(({ name }) => (home
+  .reduce((accTeams: ITeamBaseStatistics[], currentTeam: IMatch) => {
+    const isCurrentTeamInAcc = accTeams.find(({ name }) => (isHome
       ? name === currentTeam.homeTeam?.teamName
       : name === currentTeam.awayTeam?.teamName));
     if (isCurrentTeamInAcc) return accTeams;
 
-    const currentTeamData = home
+    const currentTeamData = isHome
       ? allMatches.filter(({ homeTeamId }) => homeTeamId === currentTeam.homeTeamId)
       : allMatches.filter(({ awayTeamId }) => awayTeamId === currentTeam.awayTeamId);
-
-    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, home);
+    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, isHome);
 
     return [...accTeams, teamBaseStatistcs];
-  }, [] as ITeamBaseStatistics[]);
+  }, []);
 
 const sortTeams = (teams: ITeamStatistics[]): ITeamStatistics[] => teams
   .sort((teamA, teamB) => teamB.totalPoints - teamA.totalPoints
@@ -78,7 +77,7 @@ const sortTeams = (teams: ITeamStatistics[]): ITeamStatistics[] => teams
   || teamB.goalsFavor - teamA.goalsFavor
   || teamA.goalsOwn - teamB.goalsOwn);
 
-const getPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]): ITeamStatistics[] => {
+const createPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]): ITeamStatistics[] => {
   const partialLeaderboard = teamsBaseStats
     .map((team: ITeamBaseStatistics) => {
       const totalPoints = totalPointsAmount(team.totalVictories, team.totalDraws);
@@ -106,32 +105,36 @@ const mergeTeamStatistics = (
   totalLosses: awayStats.totalLosses + homeStats.totalLosses,
 });
 
-const getFullLeaderboard = (
-  baseStatsAway: ITeamBaseStatistics[],
-  baseStatsHome: ITeamBaseStatistics[],
+const createFullLeaderboard = (
+  teamsBaseStatsAway: ITeamBaseStatistics[],
+  teamsBaseStatsHome: ITeamBaseStatistics[],
 ): ITeamStatistics[] => {
-  const teamsBaseStats = baseStatsAway.map((teamAway: ITeamBaseStatistics) => {
-    const teamStatsHome = baseStatsHome.find(({ name }) => name === teamAway.name);
-    const teamStats = mergeTeamStatistics(teamAway, teamStatsHome as ITeamStatistics);
+  const teamsBaseStats = teamsBaseStatsAway.map((teamBaseStatsAway: ITeamBaseStatistics) => {
+    const teamBaseStatsHome = teamsBaseStatsHome
+      .find(({ name }) => name === teamBaseStatsAway.name);
+    const teamBaseStats = mergeTeamStatistics(
+      teamBaseStatsAway,
+      teamBaseStatsHome as ITeamStatistics,
+    );
 
-    return teamStats;
+    return teamBaseStats;
   });
-  const teamFullStats = getPartialLeaderboard(teamsBaseStats);
-  const sortedFullLeaderboard = sortTeams(teamFullStats);
+  const teamsStats = createPartialLeaderboard(teamsBaseStats);
+  const sortedFullLeaderboard = sortTeams(teamsStats);
 
   return sortedFullLeaderboard;
 };
 
-const getHomeLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
+const getLeaderboardHome = (allMatches: IMatch[]): ITeamStatistics[] => {
   const homeTeamsBaseStats = getTeamsBaseStats(allMatches, true);
-  const homeTeamsLeaderbaord = getPartialLeaderboard(homeTeamsBaseStats);
+  const homeTeamsLeaderboard = createPartialLeaderboard(homeTeamsBaseStats);
 
-  return homeTeamsLeaderbaord;
+  return homeTeamsLeaderboard;
 };
 
-const getAwayLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
+const getLeaderboardAway = (allMatches: IMatch[]): ITeamStatistics[] => {
   const awayTeamsBaseStats = getTeamsBaseStats(allMatches, false);
-  const awayTeamsLeaderboard = getPartialLeaderboard(awayTeamsBaseStats);
+  const awayTeamsLeaderboard = createPartialLeaderboard(awayTeamsBaseStats);
 
   return awayTeamsLeaderboard;
 };
@@ -139,9 +142,9 @@ const getAwayLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
 const getLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
   const teamsBaseStatsAsHome = getTeamsBaseStats(allMatches, true);
   const teamsBaseStatsAsAway = getTeamsBaseStats(allMatches, false);
-  const teamsFullLeaderboard = getFullLeaderboard(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
+  const allTeamsLeaderboard = createFullLeaderboard(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
 
-  return teamsFullLeaderboard;
+  return allTeamsLeaderboard;
 };
 
-export { getHomeLeaderboard, getAwayLeaderboard, getLeaderboard };
+export { getLeaderboardHome, getLeaderboardAway, getLeaderboard };
