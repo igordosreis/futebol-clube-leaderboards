@@ -26,7 +26,7 @@ const baseStatistics: Partial<ITeamStatistics> = {
 const verifyIfWin = (homeGoals: number, awayGoals: number) => (homeGoals > awayGoals ? 1 : 0);
 const verifyIfDraw = (homeGoals: number, awayGoals: number) => (homeGoals === awayGoals ? 1 : 0);
 const verifyIfLoss = (homeGoals: number, awayGoals: number) => (homeGoals < awayGoals ? 1 : 0);
-const totalPointsAmount = (victories: any, draws: any) => (victories * 3) + (draws);
+const totalPointsAmount = (victories: number, draws: number) => (victories * 3) + (draws);
 
 const currentTeamFullStatistics = (teamBaseStatistics: any) => {
   const totalPoints = totalPointsAmount(
@@ -71,7 +71,7 @@ const sortTeams = (teams: ITeamStatistics[]) => teams
 
 const getHomeTeamsStats = (allMatches: IMatch[]) => {
   const homeTeamsStats = allMatches
-    .reduce((accTeams: any[], currentTeam) => {
+    .reduce((accTeams: ITeamStatistics[], currentTeam) => {
       const isCurrentTeamInAcc = accTeams
         .find(({ name }) => name === currentTeam.homeTeam?.teamName);
       if (isCurrentTeamInAcc) {
@@ -92,9 +92,30 @@ const getHomeTeamsStats = (allMatches: IMatch[]) => {
   return sortedHomeTeamsStats;
 };
 
+const mergeTeamStatistics = (awayStats: ITeamStatistics, homeStats: ITeamStatistics) => ({
+  name: awayStats.name,
+  totalGames: awayStats.totalGames + homeStats.totalGames,
+  goalsFavor: awayStats.goalsFavor + homeStats.goalsFavor,
+  goalsOwn: awayStats.goalsOwn + homeStats.goalsOwn,
+  totalVictories: awayStats.totalVictories + homeStats.totalVictories,
+  totalDraws: awayStats.totalDraws + homeStats.totalDraws,
+  totalLosses: awayStats.totalLosses + homeStats.totalLosses,
+});
+
+const getTeamFullStats = (baseStatsAway: ITeamStatistics[], baseStatsHome: ITeamStatistics[]) => {
+  const teamsBaseStats = baseStatsAway.map((teamAway: ITeamStatistics) => {
+    const teamStatsHome = baseStatsHome.find(({ name }) => name === teamAway.name);
+    const teamStats = mergeTeamStatistics(teamAway, teamStatsHome as ITeamStatistics);
+    return teamStats;
+  });
+  const teamFullStats = teamsBaseStats.map((team) => currentTeamFullStatistics(team));
+  const sortedTeams = sortTeams(teamFullStats);
+  return sortedTeams;
+};
+
 const getAwayTeamsStats = (allMatches: IMatch[]) => {
   const awayTeamsStats = allMatches
-    .reduce((accTeams: any[], currentTeam) => {
+    .reduce((accTeams: ITeamStatistics[], currentTeam) => {
       const isCurrentTeamInAcc = accTeams
         .find(({ name }) => name === currentTeam.awayTeam?.teamName);
       if (isCurrentTeamInAcc) {
@@ -115,4 +136,24 @@ const getAwayTeamsStats = (allMatches: IMatch[]) => {
   return sortedAwayTeamsStats;
 };
 
-export { getHomeTeamsStats, getAwayTeamsStats };
+const getAllTeamsStats = (allMatches: IMatch[]) => {
+  const teamsBaseStatsAsHome = allMatches.reduce((accTeams: ITeamStatistics[], currT) => {
+    const isCurrentTeamInAcc = accTeams
+      .find(({ name }) => name === currT.homeTeam?.teamName);
+    if (isCurrentTeamInAcc) return accTeams;
+    const currentTeamData = allMatches.filter(({ homeTeamId }) => homeTeamId === currT.homeTeamId);
+    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, true);
+    return [...accTeams, teamBaseStatistcs];
+  }, [] as ITeamStatistics[]);
+  const teamsBaseStatsAsAway = allMatches.reduce((accTeams: ITeamStatistics[], currT) => {
+    const isCurrentTeamInAcc = accTeams
+      .find(({ name }) => name === currT.awayTeam?.teamName);
+    if (isCurrentTeamInAcc) return accTeams;
+    const currentTeamData = allMatches.filter(({ awayTeamId }) => awayTeamId === currT.awayTeamId);
+    const teamBaseStatistcs = currentTeamBaseStatistics(currentTeamData, false);
+    return [...accTeams, teamBaseStatistcs];
+  }, [] as ITeamStatistics[]);
+  return getTeamFullStats(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
+};
+
+export { getHomeTeamsStats, getAwayTeamsStats, getAllTeamsStats };

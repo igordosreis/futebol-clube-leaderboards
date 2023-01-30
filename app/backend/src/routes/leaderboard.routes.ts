@@ -5,7 +5,7 @@ const leaderboardRouter = Router();
 
 leaderboardRouter.get(
   '/',
-  // LeaderboardController,
+  LeaderboardController.getLeaderboard,
 );
 
 leaderboardRouter.get(
