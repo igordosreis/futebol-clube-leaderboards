@@ -2,7 +2,6 @@ import IMatch, { IMatchGoals } from '../interfaces/IMatch';
 import MatchModel from '../database/models/MatchModel';
 import TeamModel from '../database/models/TeamModel';
 import HttpException from '../utils/httpException.util';
-// import TeamService from './Team.service';
 
 export default class MatchService {
   public static async findAllMatches(): Promise<MatchModel[]> {
@@ -60,10 +59,6 @@ export default class MatchService {
   }
 
   public static async updateMatchGoals(id: number, newMatchGoals: IMatchGoals): Promise<void> {
-    // const { homeTeamGoals, awayTeamGoals } = newMatchGoals;
-    await MatchModel.update(
-      { ...newMatchGoals },
-      { where: { id } },
-    );
+    await MatchModel.update({ ...newMatchGoals }, { where: { id } });
   }
 }
