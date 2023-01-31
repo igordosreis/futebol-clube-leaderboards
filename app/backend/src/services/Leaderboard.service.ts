@@ -1,4 +1,4 @@
-import ITeamStatistics from '../interfaces/ITeamStatistics';
+import ILeaderboard from '../interfaces/ILeaderboard';
 import IMatch from '../interfaces/IMatch';
 import { getLeaderboardHome, getLeaderboardAway, getLeaderboard } from '../utils/leaderboard.util';
 import MatchService from './Match.service';
@@ -6,21 +6,21 @@ import MatchService from './Match.service';
 export default class LeaderboardService {
   public static async getHomeLeaderboard() {
     const allMatches: IMatch[] = await MatchService.findMatchesInProgress(false);
-    const homeTeamsLeaderboard: ITeamStatistics[] = getLeaderboardHome(allMatches);
+    const homeTeamsLeaderboard: ILeaderboard[] = getLeaderboardHome(allMatches);
 
     return homeTeamsLeaderboard;
   }
 
   public static async getAwayLeaderboard() {
     const allMatches: IMatch[] = await MatchService.findMatchesInProgress(false);
-    const awayTeamsLeaderboard: ITeamStatistics[] = getLeaderboardAway(allMatches);
+    const awayTeamsLeaderboard: ILeaderboard[] = getLeaderboardAway(allMatches);
 
     return awayTeamsLeaderboard;
   }
 
   public static async getLeaderboard() {
     const allMatches: IMatch[] = await MatchService.findMatchesInProgress(false);
-    const teamsLeaderboard: ITeamStatistics[] = getLeaderboard(allMatches);
+    const teamsLeaderboard: ILeaderboard[] = getLeaderboard(allMatches);
 
     return teamsLeaderboard;
   }

@@ -1,7 +1,7 @@
 import IMatch from '../interfaces/IMatch';
-import ITeamStatistics, { ITeamBaseStatistics } from '../interfaces/ITeamStatistics';
+import ILeaderboard from '../interfaces/ILeaderboard';
 
-const baseStatistics: ITeamBaseStatistics = {
+const baseStats: ILeaderboard = {
   name: '',
   totalGames: 0,
   totalVictories: 0,
@@ -9,141 +9,152 @@ const baseStatistics: ITeamBaseStatistics = {
   totalLosses: 0,
   goalsFavor: 0,
   goalsOwn: 0,
+  goalsBalance: 0,
+  totalPoints: 0,
+  efficiency: 0,
 };
 
 const verifyIfWin = (
-  homeGoals: number,
-  awayGoals: number,
-): number => (homeGoals > awayGoals ? 1 : 0);
+  { totalVictories }: ILeaderboard,
+  { homeTeamGoals, awayTeamGoals }: IMatch,
+  isHome: boolean,
+): number => {
+  if (isHome) {
+    return totalVictories + (homeTeamGoals > awayTeamGoals ? 1 : 0);
+  }
+  return totalVictories + (awayTeamGoals > homeTeamGoals ? 1 : 0);
+};
 
 const verifyIfDraw = (
-  homeGoals: number,
-  awayGoals: number,
-): number => (homeGoals === awayGoals ? 1 : 0);
+  { totalDraws }: ILeaderboard,
+  { homeTeamGoals, awayTeamGoals }: IMatch,
+): number => (totalDraws + (homeTeamGoals === awayTeamGoals ? 1 : 0));
 
 const verifyIfLoss = (
-  homeGoals: number,
-  awayGoals: number,
-): number => (homeGoals < awayGoals ? 1 : 0);
+  { totalLosses }: ILeaderboard,
+  { homeTeamGoals, awayTeamGoals }: IMatch,
+  isHome: boolean,
+): number => {
+  if (isHome) {
+    return totalLosses + (homeTeamGoals < awayTeamGoals ? 1 : 0);
+  }
+  return totalLosses + (awayTeamGoals < homeTeamGoals ? 1 : 0);
+};
 
-const totalPointsAmount = (
+const getTotalPoints = (
   victories: number,
   draws: number,
 ): number => (victories * 3) + (draws);
 
-const getCurrentTeamBaseStats = (
+const getEfficiency = (
+  totalPoints: number,
+  totalGames: number,
+) => ((totalPoints / (totalGames * 3)) * 100).toFixed(2);
+
+const getCurrentTeamStats = (
   currentTeamData: IMatch[],
   isHome: boolean,
-): ITeamBaseStatistics => currentTeamData
-  .reduce((accStat: ITeamBaseStatistics, currMatch: IMatch) => ({
-    ...accStat,
-    name: isHome ? currMatch.homeTeam?.teamName : currMatch.awayTeam?.teamName,
-    totalGames: currentTeamData.length,
-    goalsFavor: accStat.goalsFavor + (isHome ? currMatch.homeTeamGoals : currMatch.awayTeamGoals),
-    goalsOwn: accStat.goalsOwn + (isHome ? currMatch.awayTeamGoals : currMatch.homeTeamGoals),
-    totalVictories: accStat.totalVictories + (isHome
-      ? verifyIfWin(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
-      : verifyIfWin(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
-    totalDraws: accStat.totalDraws + (isHome
-      ? verifyIfDraw(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
-      : verifyIfDraw(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
-    totalLosses: accStat.totalLosses + (isHome
-      ? verifyIfLoss(currMatch.homeTeamGoals, currMatch.awayTeamGoals)
-      : verifyIfLoss(currMatch.awayTeamGoals, currMatch.homeTeamGoals)),
-  }), { ...baseStatistics });
+): ILeaderboard => currentTeamData
+  .reduce((accStats: ILeaderboard, currMatch: IMatch) => {
+    const stats = {} as ILeaderboard;
 
-const getTeamsBaseStats = (
+    stats.name = isHome ? currMatch.homeTeam?.teamName : currMatch.awayTeam?.teamName;
+    stats.totalGames = currentTeamData.length;
+    stats.goalsFavor = accStats.goalsFavor
+      + (isHome ? currMatch.homeTeamGoals : currMatch.awayTeamGoals);
+    stats.goalsOwn = accStats.goalsOwn
+      + (isHome ? currMatch.awayTeamGoals : currMatch.homeTeamGoals);
+    stats.totalVictories = verifyIfWin(accStats, currMatch, isHome);
+    stats.totalDraws = verifyIfDraw(accStats, currMatch);
+    stats.totalLosses = verifyIfLoss(accStats, currMatch, isHome);
+    stats.totalPoints = getTotalPoints(stats.totalVictories, stats.totalDraws);
+    stats.goalsBalance = stats.goalsFavor - stats.goalsOwn;
+    stats.efficiency = getEfficiency(stats.totalPoints, stats.totalGames);
+
+    return stats;
+  }, baseStats);
+
+const getAllTeamsStats = (
   allMatches: IMatch[],
   isHome: boolean,
-): ITeamBaseStatistics[] => allMatches
-  .reduce((accTeams: ITeamBaseStatistics[], currentTeam: IMatch) => {
+): ILeaderboard[] => allMatches
+  .reduce((accTeams: ILeaderboard[], currentTeam: IMatch) => {
     const isCurrentTeamInAcc = accTeams.find(({ name }) => (isHome
       ? name === currentTeam.homeTeam?.teamName
       : name === currentTeam.awayTeam?.teamName));
     if (isCurrentTeamInAcc) return accTeams;
 
-    const currentTeamData = isHome
-      ? allMatches.filter(({ homeTeamId }) => homeTeamId === currentTeam.homeTeamId)
-      : allMatches.filter(({ awayTeamId }) => awayTeamId === currentTeam.awayTeamId);
-    const teamBaseStatistcs = getCurrentTeamBaseStats(currentTeamData, isHome);
+    const currentTeamData = allMatches.filter((team) => (isHome
+      ? team.homeTeamId === currentTeam.homeTeamId
+      : team.awayTeamId === currentTeam.awayTeamId));
+    const teamStats = getCurrentTeamStats(currentTeamData, isHome);
 
-    return [...accTeams, teamBaseStatistcs];
+    return [...accTeams, teamStats];
   }, []);
 
-const sortTeams = (teams: ITeamStatistics[]): ITeamStatistics[] => teams
+const mergeCurrentTeamStats = (
+  awayStats: ILeaderboard,
+  homeStats: ILeaderboard,
+): ILeaderboard => {
+  const stats = {} as ILeaderboard;
+
+  stats.name = awayStats.name;
+  stats.totalGames = awayStats.totalGames + homeStats.totalGames;
+  stats.goalsFavor = awayStats.goalsFavor + homeStats.goalsFavor;
+  stats.goalsOwn = awayStats.goalsOwn + homeStats.goalsOwn;
+  stats.totalVictories = awayStats.totalVictories + homeStats.totalVictories;
+  stats.totalDraws = awayStats.totalDraws + homeStats.totalDraws;
+  stats.totalLosses = awayStats.totalLosses + homeStats.totalLosses;
+  stats.totalPoints = awayStats.totalPoints + homeStats.totalPoints;
+  stats.goalsBalance = awayStats.goalsBalance + homeStats.goalsBalance;
+  stats.efficiency = getEfficiency(stats.totalPoints, stats.totalGames);
+
+  return stats;
+};
+
+const mergeAllTeamsStats = (
+  teamsStatsAway: ILeaderboard[],
+  teamsStatsHome: ILeaderboard[],
+): ILeaderboard[] => {
+  const teamsStats = teamsStatsAway.map((teamStatsAway: ILeaderboard) => {
+    const teamStatsHome = teamsStatsHome
+      .find(({ name }) => name === teamStatsAway.name) as ILeaderboard;
+    const teamStats = mergeCurrentTeamStats(
+      teamStatsAway,
+      teamStatsHome,
+    );
+
+    return teamStats;
+  });
+
+  return teamsStats;
+};
+
+const sortTeams = (teams: ILeaderboard[]): ILeaderboard[] => teams
   .sort((teamA, teamB) => teamB.totalPoints - teamA.totalPoints
   || teamB.totalVictories - teamA.totalVictories
   || teamB.goalsBalance - teamA.goalsBalance
   || teamB.goalsFavor - teamA.goalsFavor
   || teamA.goalsOwn - teamB.goalsOwn);
 
-const createPartialLeaderboard = (teamsBaseStats: ITeamBaseStatistics[]): ITeamStatistics[] => {
-  const partialLeaderboard = teamsBaseStats
-    .map((teamBaseStats: ITeamBaseStatistics) => {
-      const totalPoints = totalPointsAmount(teamBaseStats.totalVictories, teamBaseStats.totalDraws);
-      const efficiency = ((totalPoints / (teamBaseStats.totalGames * 3)) * 100).toFixed(2);
-      const goalsBalance = teamBaseStats.goalsFavor - teamBaseStats.goalsOwn;
+const getLeaderboardHome = (allMatches: IMatch[]): ILeaderboard[] => {
+  const homeTeamsStats = getAllTeamsStats(allMatches, true);
 
-      return { ...teamBaseStats, totalPoints, efficiency, goalsBalance };
-    });
-  const sortedPartialLeaderboard = sortTeams(partialLeaderboard);
-
-  return sortedPartialLeaderboard;
+  return sortTeams(homeTeamsStats);
 };
 
-const mergeTeamStatistics = (
-  awayStats: ITeamBaseStatistics,
-  homeStats: ITeamBaseStatistics,
-): ITeamBaseStatistics => ({
-  name: awayStats.name,
-  totalGames: awayStats.totalGames + homeStats.totalGames,
-  goalsFavor: awayStats.goalsFavor + homeStats.goalsFavor,
-  goalsOwn: awayStats.goalsOwn + homeStats.goalsOwn,
-  totalVictories: awayStats.totalVictories + homeStats.totalVictories,
-  totalDraws: awayStats.totalDraws + homeStats.totalDraws,
-  totalLosses: awayStats.totalLosses + homeStats.totalLosses,
-});
+const getLeaderboardAway = (allMatches: IMatch[]): ILeaderboard[] => {
+  const awayTeamsStats = getAllTeamsStats(allMatches, false);
 
-const createFullLeaderboard = (
-  teamsBaseStatsAway: ITeamBaseStatistics[],
-  teamsBaseStatsHome: ITeamBaseStatistics[],
-): ITeamStatistics[] => {
-  const teamsBaseStats = teamsBaseStatsAway.map((teamBaseStatsAway: ITeamBaseStatistics) => {
-    const teamBaseStatsHome = teamsBaseStatsHome
-      .find(({ name }) => name === teamBaseStatsAway.name) as ITeamBaseStatistics;
-    const teamBaseStats = mergeTeamStatistics(
-      teamBaseStatsAway,
-      teamBaseStatsHome,
-    );
-
-    return teamBaseStats;
-  });
-  const teamsStats = createPartialLeaderboard(teamsBaseStats);
-  const sortedFullLeaderboard = sortTeams(teamsStats);
-
-  return sortedFullLeaderboard;
+  return sortTeams(awayTeamsStats);
 };
 
-const getLeaderboardHome = (allMatches: IMatch[]): ITeamStatistics[] => {
-  const homeTeamsBaseStats = getTeamsBaseStats(allMatches, true);
-  const homeTeamsLeaderboard = createPartialLeaderboard(homeTeamsBaseStats);
+const getLeaderboard = (allMatches: IMatch[]): ILeaderboard[] => {
+  const teamsStatsAsAway = getAllTeamsStats(allMatches, false);
+  const teamsStatsAsHome = getAllTeamsStats(allMatches, true);
+  const teamsStats = mergeAllTeamsStats(teamsStatsAsAway, teamsStatsAsHome);
 
-  return homeTeamsLeaderboard;
-};
-
-const getLeaderboardAway = (allMatches: IMatch[]): ITeamStatistics[] => {
-  const awayTeamsBaseStats = getTeamsBaseStats(allMatches, false);
-  const awayTeamsLeaderboard = createPartialLeaderboard(awayTeamsBaseStats);
-
-  return awayTeamsLeaderboard;
-};
-
-const getLeaderboard = (allMatches: IMatch[]): ITeamStatistics[] => {
-  const teamsBaseStatsAsAway = getTeamsBaseStats(allMatches, false);
-  const teamsBaseStatsAsHome = getTeamsBaseStats(allMatches, true);
-  const allTeamsLeaderboard = createFullLeaderboard(teamsBaseStatsAsAway, teamsBaseStatsAsHome);
-
-  return allTeamsLeaderboard;
+  return sortTeams(teamsStats);
 };
 
 export { getLeaderboardHome, getLeaderboardAway, getLeaderboard };

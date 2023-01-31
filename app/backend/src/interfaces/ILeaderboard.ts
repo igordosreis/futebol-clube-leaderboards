@@ -1,4 +1,4 @@
-export interface ITeamBaseStatistics {
+export default interface ILeaderboard {
   name?: string;
   totalGames: number;
   totalVictories: number;
@@ -6,10 +6,7 @@ export interface ITeamBaseStatistics {
   totalLosses: number;
   goalsFavor: number;
   goalsOwn: number;
-}
-
-export default interface ITeamStatistics extends ITeamBaseStatistics {
   totalPoints: number;
   goalsBalance: number;
-  efficiency: number | string;
+  efficiency?: number | string;
 }
